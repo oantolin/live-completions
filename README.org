@@ -1,0 +1,52 @@
+* Overview 
+
+This packages provides a minibuffer completion UI.  It pops up the
+traditional =*Completions*= buffer and keeps it updated as you type in
+the minibuffer.  Besides the traditional multicolumn view of the
+completions, this package offers a single column view ---in case the
+changing number of columns of the traditional view proves too
+dizzying.
+
+* Why write a new completion UI?
+
+There are many excellent minibuffer completion UIs for Emacs: the
+built-in packages Icomplete, and Ido; and external packages such as
+Ivy, Helm and Selectrum.  What distinguishes this one?
+
+- Like Helm, but unlike Icomplete, Ido, Ivy and Selectrum, this
+  package puts the completions are put in a buffer.  Buffers are
+  great!  You can easily navigate around them, copy text from them,
+  save their contents in a file, etc.  All of that is sometimes
+  desirable for completions and is awkward to do when the completions
+  reside in the minibuffer.
+
+- It has both the traditional compact view of completions, in several
+  columns, and a single column view, with an easy toggle between
+  them. Helm, Ivy and Selectrum only present single column views;
+  Icomplete and Ido are horizontal by default, but can be configured
+  to give single-column vertical views (see icomplete-vertical and
+  ido-vertical).
+
+I'd say those are arguably pros. Now some things which are arguably
+cons:
+
+- It is very modest in scope: like Icomplete it is /only/ a minibuffer
+  completion UI, and it relies on Emacs' completion styles to supply
+  the actual completions. In fact, it's pretty much the same as
+  cosntantly hitting the =?= key to pop up the =*Completions*= buffer.
+
+  Selectrum is almost as modest in scope: it also mostly focuses on
+  selecting items from lists but instead of using the standard
+  completion machinery, it has it's own API and a few extra
+  convenience commands. Ivy and Helm of course have tons of extra
+  functionality beyond selecting items from lists. Ido is a weird mix:
+  it doesn't take over all completion (well, not by default, see
+  ido-completing-read+), but offers some extra functionality where it
+  does take over completion.
+
+- It isn't very pretty. It just looks like the =*Completions*= buffer,
+  you've seen it before. The traditional multicolumn view sometimes
+  even gets misaligned! This package can however highlight the
+  completion that would be entered into the minibuffer by
+  =minibuffer-force-complete=, so at least that's a small splash of
+  color.
