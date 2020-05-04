@@ -46,7 +46,9 @@ cons:
 
 - It isn't very pretty. It just looks like the =*Completions*= buffer,
   you've seen it before. The traditional multicolumn view sometimes
-  even gets misaligned! This package can however highlight the
+  even gets misaligned! This package does however highlight the
   completion that would be entered into the minibuffer by
   =minibuffer-force-complete=, so at least that's a small splash of
   color.
+
+  [[./images/describe-variable.png]]
