@@ -5,7 +5,7 @@
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
 ;; Package-Requires: ((emacs "24.4"))
-;; Version: 0.4
+;; Version: 0.1
 ;; Homepage: https://github.com/oantolin/live-completions
 
 ;; This program is free software; you can redistribute it and/or modify
