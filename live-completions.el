@@ -5,7 +5,7 @@
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
 ;; Package-Requires: ((emacs "24.4"))
-;; Version: 0.1
+;; Version: 0.2
 ;; Homepage: https://github.com/oantolin/live-completions
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -171,7 +171,6 @@ Meant to be added to `minibuffer-setup-hook'."
            (read-from-minibuffer live-completions--confirm))))
     (if live-completions-mode
         (progn
-          (when (bound-and-true-p icomplete-mode) (icomplete-mode -1))
           (add-hook 'minibuffer-setup-hook #'live-completions--setup)
           (dolist (advice advice-list)
             (advice-add (car advice) :before (cadr advice))))
@@ -181,6 +180,30 @@ Meant to be added to `minibuffer-setup-hook'."
       (dolist (buffer (buffer-list))
         (when (minibufferp buffer)
           (remove-hook 'post-command-hook #'live-completions--update t))))))
+
+(defmacro live-completions-single-column-do (separator &rest body)
+  "Evaluate BODY with single column live completion.
+Use SEPARATOR to separate the candidates."
+  (declare (indent 1))
+  (let ((livep (make-symbol "livep"))
+        (columns (make-symbol "columns"))
+        (icompletep (make-symbol "icompletep")))
+    `(let ((,livep live-completions-mode)
+           (,columns (bound-and-true-p live-completions-columns))
+           (,icompletep (bound-and-true-p icomplete-mode)))
+       (unwind-protect
+           (progn
+             (when ,icompletep (icomplete-mode -1))
+             (live-completions-set-columns 'single)
+             (live-completions-mode)
+             (let ((live-completions-horizontal-separator
+                    (or ,separator live-completions-horizontal-separator)))
+               ,@body))
+         (if ,columns
+             (live-completions-set-columns ,columns)
+           (makunbound 'live-completions-columns))
+         (unless ,livep (live-completions-mode -1))
+         (when ,icompletep (icomplete-mode))))))
 
 (provide 'live-completions)
 ;;; live-completions.el ends here
