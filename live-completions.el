@@ -32,8 +32,6 @@
 
 ;;; Code:
 
-(require 'cl-lib)
-
 (defgroup live-completions nil
   "Live updating of the *Completions* buffer."
   :group 'completion)
