@@ -76,7 +76,7 @@ columns."
              (not (eq columns 'toggle)))
     (live-completions--update)))
 
-(defcustom live-completions-columns 'single
+(defcustom live-completions-columns 'multiple
   "How many columns of candidates live-completions displays.
 To change the value from Lisp code use
 `live-completions-set-columns'."
