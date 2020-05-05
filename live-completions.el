@@ -42,6 +42,30 @@ The separator should contain at least one newline."
   :type 'string
   :group 'live-completions)
 
+(defcustom live-completions-columns 'multiple
+  "How many columns of candidates live-completions displays.
+To change the value from Lisp code use
+`live-completions-set-columns'."
+  :type '(choice
+          (const :tag "Single column" single)
+          (const :tag "Multiple columns" multiple))
+  :set (lambda (var columns)
+         (if (and (not (boundp var)) (eq columns 'multiple))
+             (set var 'multiple )
+           (live-completions-set-columns columns)))
+  :group 'live-completions)
+
+(defface live-completions-forceable-candidate
+  '((default :weight bold)
+    (((class color) (min-colors 88) (background dark)) :background "#10104f")
+    (((class color) (min-colors 88) (background light)) :background "#c4ffe0")
+    (t :foreground "blue"))
+  "Face for the candidate that force-completion would select."
+  :group 'live-completions)
+
+(defvar live-completions--livep nil
+  "Should we continously update the *Completions* buffer?")
+
 (defun live-completions-set-columns (columns)
   "Set how many COLUMNS of candidates are displayed.
 
@@ -72,29 +96,8 @@ columns."
         'single))))
   (when (and (bound-and-true-p live-completions-mode)
              (not (eq columns 'toggle)))
-    (live-completions--update)))
-
-(defcustom live-completions-columns 'multiple
-  "How many columns of candidates live-completions displays.
-To change the value from Lisp code use
-`live-completions-set-columns'."
-  :type '(choice
-          (const :tag "Single column" single)
-          (const :tag "Multiple columns" multiple))
-  :set (lambda (_ columns)
-         (live-completions-set-columns columns))
-  :group 'live-completions)
-
-(defface live-completions-forceable-candidate
-  '((default :weight bold)
-    (((class color) (min-colors 88) (background dark)) :background "#10104f")
-    (((class color) (min-colors 88) (background light)) :background "#c4ffe0")
-    (t :foreground "blue"))
-  "Face for the candidate that force-completion would select."
-  :group 'live-completions)
-
-(defvar live-completions--livep nil
-  "Should we continously update the *Completions* buffer?")
+    (live-completions--update))
+  (setq live-completions-columns columns))
 
 (defun live-completions--request (&rest _)
   "Request live completion."
@@ -189,7 +192,7 @@ Use SEPARATOR to separate the candidates."
         (columns (make-symbol "columns"))
         (icompletep (make-symbol "icompletep")))
     `(let ((,livep live-completions-mode)
-           (,columns (bound-and-true-p live-completions-columns))
+           (,columns live-completions-columns)
            (,icompletep (bound-and-true-p icomplete-mode)))
        (unwind-protect
            (progn
@@ -199,9 +202,7 @@ Use SEPARATOR to separate the candidates."
              (let ((live-completions-horizontal-separator
                     (or ,separator live-completions-horizontal-separator)))
                ,@body))
-         (if ,columns
-             (live-completions-set-columns ,columns)
-           (makunbound 'live-completions-columns))
+         (live-completions-set-columns ,columns)
          (unless ,livep (live-completions-mode -1))
          (when ,icompletep (icomplete-mode))))))
 
