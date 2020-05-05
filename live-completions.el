@@ -93,18 +93,28 @@ To change the value from Lisp code use
   "Face for the candidate that force-completion would select."
   :group 'live-completions)
 
+(defvar live-completions--livep nil
+  "Should we continously update the *Completions* buffer?")
+
+(defun live-completions--request (&rest _)
+  "Request live completion."
+  (setq live-completions--livep 'please))
+
+(defun live-completions--confirm (&rest _)
+  "Enable live completion if and only if a request was made."
+  (setq live-completions--livep (eq live-completions--livep 'please)))
+
 (defun live-completions--update ()
   "Update the *Completions* buffer.
 Meant to be added to `post-command-hook'."
   (let ((while-no-input-ignore-events '(selection-request)))
     (while-no-input
-      (when minibuffer-completion-table
-        (condition-case nil
-            (save-excursion
-              (goto-char (point-max))
-              (let ((minibuffer-message-timeout 0))
-                (minibuffer-completion-help)))
-          (quit (abort-recursive-edit)))))))
+      (condition-case nil
+          (save-excursion
+            (goto-char (point-max))
+            (let ((minibuffer-message-timeout 0))
+              (minibuffer-completion-help)))
+        (quit (abort-recursive-edit))))))
 
 (defun live-completions--highlight-forceable (completions &optional _common)
   "Highlight the completion that `minibuffer-force-complete' would insert.
@@ -121,8 +131,9 @@ is were the COMPLETIONS argument comes from."
 (defun live-completions--setup ()
   "Setup live updating for the *Completions* buffer.
 Meant to be added to `minibuffer-setup-hook'."
-  (sit-for 0.01)
-  (add-hook 'post-command-hook #'live-completions--update nil t))
+  (when live-completions--livep
+    (sit-for 0.01)
+    (add-hook 'post-command-hook #'live-completions--update nil t)))
 
 (defun live-completions--hide-first-line (&rest _)
   "Make first line in *Completions* buffer invisible."
@@ -153,22 +164,23 @@ Meant to be added to `minibuffer-setup-hook'."
 (define-minor-mode live-completions-mode
   "Live updating of the *Completions* buffer."
   :global t
-  (if live-completions-mode
-      (progn
-        (when (bound-and-true-p icomplete-mode) (icomplete-mode -1))
-        (add-hook 'minibuffer-setup-hook #'live-completions--setup)
-        (advice-add 'display-completion-list :before
-                    #'live-completions--highlight-forceable)
-        (advice-add 'completion--insert-strings :before
-                    #'live-completions--hide-first-line))
-    (remove-hook 'minibuffer-setup-hook #'live-completions--setup)
-    (advice-remove 'display-completion-list
-                   #'live-completions--highlight-forceable)
-    (advice-remove 'completion--insert-strings
-                   #'live-completions--hide-first-line)
-    (dolist (buffer (buffer-list))
-      (when (minibufferp buffer)
-        (remove-hook 'post-command-hook #'live-completions--update t)))))
+  (let ((advice-list
+         '((display-completion-list live-completions--highlight-forceable)
+           (completion--insert-strings live-completions--hide-first-line)
+           (completing-read live-completions--request)
+           (read-from-minibuffer live-completions--confirm))))
+    (if live-completions-mode
+        (progn
+          (when (bound-and-true-p icomplete-mode) (icomplete-mode -1))
+          (add-hook 'minibuffer-setup-hook #'live-completions--setup)
+          (dolist (advice advice-list)
+            (advice-add (car advice) :before (cadr advice))))
+      (remove-hook 'minibuffer-setup-hook #'live-completions--setup)
+      (dolist (advice advice-list)
+        (advice-remove (car advice) (cadr advice)))
+      (dolist (buffer (buffer-list))
+        (when (minibufferp buffer)
+          (remove-hook 'post-command-hook #'live-completions--update t))))))
 
 (provide 'live-completions)
 ;;; live-completions.el ends here
