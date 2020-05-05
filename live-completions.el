@@ -127,7 +127,7 @@ Meant to be added to `minibuffer-setup-hook'."
   (add-hook 'post-command-hook #'live-completions--update nil t))
 
 (defun live-completions--hide-first-line (&rest _)
-  "Make first line invisible in *Completions* buffer."
+  "Make first line in *Completions* buffer invisible."
   (when (string= (buffer-name) "*Completions*")
     (save-excursion
       (goto-char (point-min))
