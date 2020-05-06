@@ -187,15 +187,22 @@ Meant to be added to `minibuffer-setup-hook'."
         (when (minibufferp buffer)
           (remove-hook 'post-command-hook #'live-completions--update t))))))
 
-(defmacro live-completions-single-column-do (config &rest body)
+(defmacro live-completions-do (config &rest body)
   "Evaluate BODY with single column live completion.
 The CONFIG argument should be a plist with allowed keys
-`:separator' and `:height'.  The separator should be a string
-containing at least one newline (and can have text properties to
-control it's display).  The height controlls the maximum height
-if the completiones buffer, it can be either an integer (number
-of lines) or a function, called with the completions buffer as
-argument, that computes the maximum height."
+`:columns', `:separator' and `:height'.  
+
+The `:columns' key should map to either the symbol `single' or
+`multiple'.  It defaults to `live-completions-columns'.
+
+The separator should be a string containing at least one
+newline (and can have text properties to control it's display).
+It defaults to `live-completions-horizontal-separator'.
+
+The height controls the maximum height of the completions buffer,
+it can be either an integer (number of lines) or a function,
+called with the completions buffer as argument, that computes the
+maximum height."
   (declare (indent 1))
   (let ((livep (make-symbol "livep"))
         (columns (make-symbol "columns"))
@@ -211,7 +218,8 @@ argument, that computes the maximum height."
        (unwind-protect
            (progn
              (when ,icompletep (icomplete-mode -1))
-             (live-completions-set-columns 'single)
+             ,@(let ((cols (plist-get config :columns)))
+                 (when cols `((live-completions-set-columns ,cols))))
              (unless ,livep (live-completions-mode))
              ,@(when (plist-get config :height)
                  `((unless ,resizep (temp-buffer-resize-mode))))
