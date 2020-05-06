@@ -171,6 +171,7 @@ Meant to be added to `minibuffer-setup-hook'."
          '((display-completion-list live-completions--highlight-forceable)
            (completion--insert-strings live-completions--hide-first-line)
            (completing-read live-completions--request)
+           (read-buffer-to-switch live-completions--request)
            (read-from-minibuffer live-completions--confirm))))
     (if live-completions-mode
         (progn
