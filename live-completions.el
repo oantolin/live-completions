@@ -66,7 +66,7 @@ To change the value from Lisp code use
 (defvar live-completions--livep nil
   "Should we continously update the *Completions* buffer?")
 
-(defun live-completions-set-columns (columns)
+(defun live-completions-set-columns (columns &optional interactivep)
   "Set how many COLUMNS of candidates are displayed.
 
 Called from Lisp code COLUMNS should be one of the symbols
@@ -80,7 +80,8 @@ columns."
    (list (pcase current-prefix-arg
            ('nil 'toggle)
            (1 'single)
-           (_ 'multiple))))
+           (_ 'multiple))
+         t))
   (pcase columns
     ('single
      (advice-add 'completion--insert-strings :around
@@ -94,8 +95,8 @@ columns."
                            'completion--insert-strings)
           'multiple
         'single))))
-  (when (and (bound-and-true-p live-completions-mode)
-             (not (eq columns 'toggle)))
+  (when (and interactivep
+             (bound-and-true-p live-completions-mode))
     (live-completions--update))
   (setq live-completions-columns columns))
 
@@ -199,7 +200,7 @@ Use SEPARATOR to separate the candidates."
            (progn
              (when ,icompletep (icomplete-mode -1))
              (live-completions-set-columns 'single)
-             (live-completions-mode)
+             (unless ,livep (live-completions-mode))
              (let ((live-completions-horizontal-separator
                     (or ,separator live-completions-horizontal-separator)))
                ,@body))
