@@ -169,19 +169,20 @@ Meant to be added to `minibuffer-setup-hook'."
   "Live updating of the *Completions* buffer."
   :global t
   (let ((advice-list
-         '((display-completion-list live-completions--highlight-forceable)
-           (completion--insert-strings live-completions--hide-first-line)
-           (completing-read live-completions--request)
-           (read-buffer-to-switch live-completions--request)
-           (read-from-minibuffer live-completions--confirm))))
+         '((live-completions--highlight-forceable display-completion-list)
+           (live-completions--hide-first-line completion--insert-strings)
+           (live-completions--request
+            completing-read read-buffer-to-switch)
+           (live-completions--confirm
+            read-string read-from-minibuffer))))
     (if live-completions-mode
         (progn
           (add-hook 'minibuffer-setup-hook #'live-completions--setup)
-          (dolist (advice advice-list)
-            (advice-add (car advice) :before (cadr advice))))
+          (dolist (spec advice-list)
+            (dolist (fn (cdr spec)) (advice-add fn :before (car spec)))))
       (remove-hook 'minibuffer-setup-hook #'live-completions--setup)
-      (dolist (advice advice-list)
-        (advice-remove (car advice) (cadr advice)))
+      (dolist (spec advice-list)
+        (dolist (fn (cdr spec)) (advice-remove fn (car spec))))
       (dolist (buffer (buffer-list))
         (when (minibufferp buffer)
           (remove-hook 'post-command-hook #'live-completions--update t))))))
