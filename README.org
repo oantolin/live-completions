@@ -11,21 +11,25 @@ dizzying.
 
 There are many excellent minibuffer completion UIs for Emacs: the
 built-in packages Icomplete, and Ido; and external packages such as
-Ivy, Helm and Selectrum.  What distinguishes this one?
+[[https://github.com/abo-abo/swiper][Ivy]], [[https://github.com/emacs-helm/helm][Helm]] and [[https://github.com/raxod502/selectrum][Selectrum]].  What distinguishes this one?
 
 - Like Helm, but unlike Icomplete, Ido, Ivy and Selectrum, this
-  package puts the completions are put in a buffer.  Buffers are
-  great!  You can easily navigate around them, copy text from them,
-  save their contents in a file, etc.  All of that is sometimes
-  desirable for completions and is awkward to do when the completions
-  reside in the minibuffer.
+  package puts the completions in a buffer. Buffers are great! You can
+  easily navigate around them, copy text from them, save their
+  contents in a file, etc. All of that is sometimes desirable for
+  completions and is awkward to do when the completions reside in the
+  minibuffer.
+
+  If you want to define your own actions for the candidate at point in
+  the =*Completions*= buffer, Emacs already has a convenient
+  =completion-list-mode-map= keymap where you can bind them.
 
 - It has both the traditional compact view of completions, in several
   columns, and a single column view, with an easy toggle between
   them. Helm, Ivy and Selectrum only present single column views;
   Icomplete and Ido are horizontal by default, but can be configured
-  to give single-column vertical views (see icomplete-vertical and
-  ido-vertical).
+  to give single-column vertical views (see [[https://github.com/oantolin/icomplete-vertical][icomplete-vertical]] and
+  [[https://github.com/creichert/ido-vertical-mode.el][ido-vertical]]).
 
 I'd say those are arguably pros. Now some things which are arguably
 cons:
@@ -41,7 +45,7 @@ cons:
   convenience commands. Ivy and Helm of course have tons of extra
   functionality beyond selecting items from lists. Ido is a weird mix:
   it doesn't take over all completion (well, not by default, see
-  ido-completing-read+), but offers some extra functionality where it
+  [[https://github.com/DarwinAwardWinner/ido-completing-read-plus][ido-completing-read+]]), but offers some extra functionality where it
   does take over completion.
 
 - It isn't very pretty. It just looks like the =*Completions*= buffer,
@@ -52,6 +56,9 @@ cons:
   color.
 
   [[./images/describe-variable.png]]
+
+  (Did you spot the misalignment? :P)
+
 * Defining your own single column commands
 
 If you don't want to use =live-completions-mode= all the time, or you
