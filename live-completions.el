@@ -187,26 +187,42 @@ Meant to be added to `minibuffer-setup-hook'."
         (when (minibufferp buffer)
           (remove-hook 'post-command-hook #'live-completions--update t))))))
 
-(defmacro live-completions-single-column-do (separator &rest body)
+(defmacro live-completions-single-column-do (config &rest body)
   "Evaluate BODY with single column live completion.
-Use SEPARATOR to separate the candidates."
+The CONFIG argument should be a plist with allowed keys
+`:separator' and `:height'.  The separator should be a string
+containing at least one newline (and can have text properties to
+control it's display).  The height controlls the maximum height
+if the completiones buffer, it can be either an integer (number
+of lines) or a function, called with the completions buffer as
+argument, that computes the maximum height."
   (declare (indent 1))
   (let ((livep (make-symbol "livep"))
         (columns (make-symbol "columns"))
-        (icompletep (make-symbol "icompletep")))
+        (icompletep (make-symbol "icompletep"))
+        (resizep (make-symbol "resizep"))
+        (cfg (lambda (key var)
+               (let ((val (plist-get config key)))
+                 (when val `((,var ,val)))))))
     `(let ((,livep live-completions-mode)
            (,columns live-completions-columns)
-           (,icompletep (bound-and-true-p icomplete-mode)))
+           (,icompletep (bound-and-true-p icomplete-mode))
+           (,resizep temp-buffer-resize-mode))
        (unwind-protect
            (progn
              (when ,icompletep (icomplete-mode -1))
              (live-completions-set-columns 'single)
              (unless ,livep (live-completions-mode))
-             (let ((live-completions-horizontal-separator
-                    (or ,separator live-completions-horizontal-separator)))
+             ,@(when (plist-get config :height)
+                 `((unless ,resizep (temp-buffer-resize-mode))))
+             (let (,@(funcall cfg :separator
+                              'live-completions-horizontal-separator)
+                   ,@(funcall cfg :height 'temp-buffer-max-height))
                ,@body))
          (live-completions-set-columns ,columns)
          (unless ,livep (live-completions-mode -1))
+         ,@(when (plist-get config :height)
+             `((unless ,resizep (temp-buffer-resize-mode -1))))
          (when ,icompletep (icomplete-mode))))))
 
 (provide 'live-completions)
