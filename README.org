@@ -52,7 +52,7 @@ cons:
   color.
 
   [[./images/describe-variable.png]]
-* Defining you own single column commands
+* Defining your own single column commands
 
 If you don't want to use =live-completions-mode= all the time, or you
 use it in multiple column mode, but you want to define a few commands
