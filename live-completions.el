@@ -172,7 +172,7 @@ Meant to be added to `minibuffer-setup-hook'."
          '((live-completions--highlight-forceable display-completion-list)
            (live-completions--hide-first-line completion--insert-strings)
            (live-completions--request
-            completing-read read-buffer-to-switch)
+            completing-read read-buffer kill-buffer)
            (live-completions--confirm
             read-string read-from-minibuffer))))
     (if live-completions-mode
