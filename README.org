@@ -1,4 +1,7 @@
 * Overview 
+  :PROPERTIES:
+  :TOC:      :include all :ignore this
+  :END:
 
 This packages provides a minibuffer completion UI.  It pops up the
 traditional =*Completions*= buffer and keeps it updated as you type in
@@ -7,18 +10,26 @@ completions, this package offers a single column view ---in case the
 changing number of columns of the traditional view proves too
 dizzying.
 
+:CONTENTS:
+- [[#why-write-a-new-completion-ui][Why write a new completion UI?]]
+- [[#screenshot][Screenshot]]
+- [[#sort-orders-for-candidates][Sort orders for candidates]]
+- [[#defining-your-own-commands-with-live-completion][Defining your own commands with live completion]]
+:END:
+
 * Why write a new completion UI?
 
 There are many excellent minibuffer completion UIs for Emacs: the
 built-in packages Icomplete, and Ido; and external packages such as
 [[https://github.com/abo-abo/swiper][Ivy]], [[https://github.com/emacs-helm/helm][Helm]] and [[https://github.com/raxod502/selectrum][Selectrum]].  What distinguishes this one?
 
-- Like Helm, but unlike Icomplete, Ido, Ivy and Selectrum, this
-  package puts the completions in a buffer. Buffers are great! You can
-  easily navigate around them, copy text from them, save their
-  contents in a file, etc. All of that is sometimes desirable for
-  completions and is awkward to do when the completions reside in the
-  minibuffer.
+- This package puts the completions in a buffer. This is like Helm,
+  but unlike Icomplete, Ido, Ivy and Selectrum. (While Ivy doesn't use
+  a buffer by default, it has the =ivy-occur= command which produces a
+  neat buffer.) Buffers are great! You can easily navigate around
+  them, copy text from them, save their contents in a file, etc. All
+  of that is sometimes desirable for completions and is awkward to do
+  when the completions reside in the minibuffer.
 
   If you want to define your own actions for the candidate at point in
   the =*Completions*= buffer, Emacs already has a convenient
@@ -55,9 +66,29 @@ cons:
   =minibuffer-force-complete=, so at least that's a small splash of
   color.
 
+* Screenshot
+
   [[./images/describe-variable.png]]
 
   (Did you spot the misalignment? :P)
+
+* Sort orders for candidates
+
+  The variable =live-completions-sort-order= controls the sorting of
+  completion candidates. You can customize this variable. It can take
+  three values:
+
+  - =display=: this is the order of the classic =*Completions*= buffer, it
+    is the default.
+  - =cycle=: this is the order that tab cycling in the default
+    minibuffer tab completion uses, and is also the order Icomplete uses.
+  - =nil=: no sorting, even if the completion source specifies a sort
+    function.
+
+  The =cycle= and =nil= options put the candidate that force completion
+  would select at the top of the list. The classic =display= oder does
+  not, but it should be easy to spot this candidate because is is
+  higlighted.
 
 * Defining your own commands with live completion
 
