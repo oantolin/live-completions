@@ -84,8 +84,6 @@ The valid choices are:
 (defvar live-completions--livep nil
   "Should we continously update the *Completions* buffer?")
 
-(defvar live-completions-columns)
-
 ;;;###autoload
 (defun live-completions-set-columns (columns)
   "Set how many COLUMNS of completion candidates are displayed.
