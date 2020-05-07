@@ -121,14 +121,15 @@ while =insert-kill-ring-item= is active. Once the command finishes
 running, your previous column completion configuration will be
 restored.
 
-All of the options, =:columns=, =:separator= and =:height=, are
-optional. The =:separator= is only used in single-column mode and
-defaults to =live-completions-horizontal-separator=. If you don't
-include a =:height= the default is to follow =temp-buffer-resize-mode= if
-you have it active and to use =fit-window-to-buffer= otherwise (this
-lets the completions buffer take up most of the frame). If you omit
-all three parts you still need to include the empty parenthesis:
-=(live-completions-do () ...)=!.
+All of the options, =:columns=, =:separator=, =:height= and =:sort= (not shown
+in the example), are optional. The =:separator= is only used in
+single-column mode and defaults to
+=live-completions-horizontal-separator=. If you don't include a =:height=
+the default is to follow =temp-buffer-resize-mode= if you have it active
+and to use =fit-window-to-buffer= otherwise (this lets the completions
+buffer take up most of the frame). If you omit all four parts you
+still need to include the empty parenthesis: =(live-completions-do ()
+...)=!.
 
 This package contains the =live-completions-do= macro for you to
 implement your own commands. It does not define any commands that use

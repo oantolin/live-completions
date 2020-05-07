@@ -5,7 +5,7 @@
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: convenience
 ;; Package-Requires: ((emacs "24.4"))
-;; Version: 0.2
+;; Version: 0.3
 ;; Homepage: https://github.com/oantolin/live-completions
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -251,7 +251,7 @@ Meant to be added to `minibuffer-setup-hook'."
 (defmacro live-completions-do (config &rest body)
   "Evaluate BODY with single column live completion.
 The CONFIG argument should be a plist with allowed keys
-`:columns', `:separator' and `:height'.  
+`:columns', `:separator', `:height' and `:sort'.  
 
 The `:columns' key should map to either the symbol `single' or
 `multiple'.  It defaults to `live-completions-columns'.
@@ -263,19 +263,25 @@ It defaults to `live-completions-horizontal-separator'.
 The height controls the maximum height of the completions buffer,
 it can be either an integer (number of lines) or a function,
 called with the completions buffer as argument, that computes the
-maximum height."
+maximum height.
+
+The `:sort' key controls the sort order.  It defaults to
+`live-completions-sort-order'; see the documentation of that
+variable for the possible values associated to this key."
   (declare (indent 1))
   (let ((livep (make-symbol "livep"))
         (columns (make-symbol "columns"))
         (icompletep (make-symbol "icompletep"))
         (resizep (make-symbol "resizep"))
+        (sort (make-symbol "sort"))
         (cfg (lambda (key var)
                (let ((val (plist-get config key)))
                  (when val `((,var ,val)))))))
     `(let ((,livep live-completions-mode)
            (,columns live-completions-columns)
            (,icompletep (bound-and-true-p icomplete-mode))
-           (,resizep temp-buffer-resize-mode))
+           (,resizep temp-buffer-resize-mode)
+           (,sort live-completions-sort-order))
        (unwind-protect
            (progn
              (when ,icompletep (icomplete-mode -1))
@@ -286,7 +292,8 @@ maximum height."
                  `((unless ,resizep (temp-buffer-resize-mode))))
              (let (,@(funcall cfg :separator
                               'live-completions-horizontal-separator)
-                   ,@(funcall cfg :height 'temp-buffer-max-height))
+                   ,@(funcall cfg :height 'temp-buffer-max-height)
+                   ,@(funcall cfg :sort 'live-completions-sort-order))
                ,@body))
          (live-completions-set-columns ,columns)
          (unless ,livep (live-completions-mode -1))
