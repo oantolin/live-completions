@@ -51,7 +51,7 @@ To change the value from Lisp code use
           (const :tag "Multiple columns" multiple))
   :set (lambda (var columns)
          (if (and (not (boundp var)) (eq columns 'multiple))
-             (set var 'multiple)
+             (set var 'multiple )
            (live-completions-set-columns columns)))
   :group 'live-completions)
 
@@ -61,18 +61,6 @@ To change the value from Lisp code use
     (((class color) (min-colors 88) (background light)) :background "#c4ffe0")
     (t :foreground "blue"))
   "Face for the candidate that force-completion would select."
-  :group 'live-completions)
-
-(defcustom live-completions-sort-unsorted t
-  "Whether or not to sort completions.
-This only applies to collections that do not specify a sort
-function themseleves.  To change the value from Lisp code use
-`live-completions-set-sort-unsorted'."
-  :type 'boolean
-  :set (lambda (var sortp)
-         (if (and (not (boundp var)) sortp)
-             (set var t)
-           (live-completions-set-sort-unsorted sortp)))
   :group 'live-completions)
 
 (defvar live-completions--livep nil
@@ -111,19 +99,6 @@ columns."
              (bound-and-true-p live-completions-mode))
     (live-completions--update))
   (setq live-completions-columns columns))
-
-(defun live-completions--lie-about-sorting (_metadata prop)
-  "If asked about `display-sort-function', say `identity'."
-  (when (eq prop 'display-sort-function) #'identity))
-
-(defun live-completions-set-sort-unsorted (sortp)
-  "Set whether to sort completions that don't specify a sort function.
-The argument SORTP should be either t or nil."
-  (if sortp
-      (advice-add 'completion-metadata-get :after-until
-                  #'live-completions--lie-about-sorting)
-    (advice-remove 'completion-metadata-get
-                   #'live-completions--lie-about-sorting)))
 
 (defun live-completions--request (&rest _)
   "Request live completion."
