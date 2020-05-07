@@ -127,9 +127,8 @@ function themseleves.  To change the value from Lisp code use
   "Should we continously update the *Completions* buffer?")
 
 (defun live-completions--lie-about-sorting (_metadata prop)
-  "If asked about sorting functions say `identity'."
-  (when (memq prop '(display-sort-function cycle-sort-function))
-    #'identity))
+  "If asked about `display-sort-function', say `identity'."
+  (when (eq prop 'display-sort-function) #'identity))
 
 (defun live-completions--request (&rest _)
   "Request live completion."
