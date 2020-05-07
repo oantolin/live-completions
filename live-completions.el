@@ -78,7 +78,9 @@ The valid choices are:
 
 - nil: this disables all sorting, even if the metadata specifies
   a `display-sort-function' or `cycle-sort-function'."
-  :type '(choice (const display) (const cycle) (const nil))
+  :type '(choice (const :tag "Classic *Completions*" display)
+                 (const :tag "Tab cycling or Icomplete order" cycle)
+                 (const :tag "No sorting" nil))
   :group 'live-completions)
 
 (defvar live-completions--livep nil
