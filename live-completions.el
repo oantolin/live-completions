@@ -105,10 +105,10 @@ To change the value from Lisp code use
   "Set whether to sort completions that don't specify a sort function.
 The argument SORTP should be either t or nil."
   (if sortp
-      (advice-add 'completion-metadata-get :after-until
-                  #'live-completions--lie-about-sorting)
-    (advice-remove 'completion-metadata-get
-                   #'live-completions--lie-about-sorting))
+      (advice-remove 'completion-metadata-get
+                   #'live-completions--lie-about-sorting)
+    (advice-add 'completion-metadata-get :after-until
+                  #'live-completions--lie-about-sorting))
   (setq live-completions-sort-unsorted sortp))
 
 (defcustom live-completions-sort-unsorted t
