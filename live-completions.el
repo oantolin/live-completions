@@ -42,7 +42,41 @@ The separator should contain at least one newline."
   :type 'string
   :group 'live-completions)
 
-(defvar live-completions-columns) ; defined below
+(defcustom live-completions-columns 'multiple
+  "How many columns of candidates live-completions displays.
+To change the value from Lisp code use
+`live-completions-set-columns'."
+  :type '(choice
+          (const :tag "Single column" single)
+          (const :tag "Multiple columns" multiple))
+  :set (lambda (var columns)
+         (if (and (not (boundp var)) (eq columns 'multiple))
+             (set var 'multiple)
+           (live-completions-set-columns columns)))
+  :group 'live-completions)
+
+(defface live-completions-forceable-candidate
+  '((default :weight bold)
+    (((class color) (min-colors 88) (background dark)) :background "#10104f")
+    (((class color) (min-colors 88) (background light)) :background "#c4ffe0")
+    (t :foreground "blue"))
+  "Face for the candidate that force-completion would select."
+  :group 'live-completions)
+
+(defcustom live-completions-sort-unsorted t
+  "Whether or not to sort completions.
+This only applies to collections that do not specify a sort
+function themseleves.  To change the value from Lisp code use
+`live-completions-set-sort-unsorted'."
+  :type 'boolean
+  :set (lambda (var sortp)
+         (if (and (not (boundp var)) sortp)
+             (set var t)
+           (live-completions-set-sort-unsorted sortp)))
+  :group 'live-completions)
+
+(defvar live-completions--livep nil
+  "Should we continously update the *Completions* buffer?")
 
 (defun live-completions-set-columns (columns &optional interactivep)
   "Set how many COLUMNS of candidates are displayed.
@@ -78,28 +112,9 @@ columns."
     (live-completions--update))
   (setq live-completions-columns columns))
 
-(defcustom live-completions-columns 'multiple
-  "How many columns of candidates live-completions displays.
-To change the value from Lisp code use
-`live-completions-set-columns'."
-  :type '(choice
-          (const :tag "Single column" single)
-          (const :tag "Multiple columns" multiple))
-  :set (lambda (var columns)
-         (if (and (not (boundp var)) (eq columns 'multiple))
-             (set var 'multiple)
-           (live-completions-set-columns columns)))
-  :group 'live-completions)
-
-(defface live-completions-forceable-candidate
-  '((default :weight bold)
-    (((class color) (min-colors 88) (background dark)) :background "#10104f")
-    (((class color) (min-colors 88) (background light)) :background "#c4ffe0")
-    (t :foreground "blue"))
-  "Face for the candidate that force-completion would select."
-  :group 'live-completions)
-
-(defvar live-completions-sort-unsorted) ; defined below
+(defun live-completions--lie-about-sorting (_metadata prop)
+  "If asked about `display-sort-function', say `identity'."
+  (when (eq prop 'display-sort-function) #'identity))
 
 (defun live-completions-set-sort-unsorted (sortp)
   "Set whether to sort completions that don't specify a sort function.
@@ -110,25 +125,6 @@ The argument SORTP should be either t or nil."
     (advice-remove 'completion-metadata-get
                    #'live-completions--lie-about-sorting))
   (setq live-completions-sort-unsorted sortp))
-
-(defcustom live-completions-sort-unsorted t
-  "Whether or not to sort completions.
-This only applies to collections that do not specify a sort
-function themseleves.  To change the value from Lisp code use
-`live-completions-set-sort-unsorted'."
-  :type 'boolean
-  :set (lambda (var sortp)
-         (if (and (not (boundp var)) sortp)
-             (set var t)
-           (live-completions-set-sort-unsorted sortp)))
-  :group 'live-completions)
-
-(defvar live-completions--livep nil
-  "Should we continously update the *Completions* buffer?")
-
-(defun live-completions--lie-about-sorting (_metadata prop)
-  "If asked about `display-sort-function', say `identity'."
-  (when (eq prop 'display-sort-function) #'identity))
 
 (defun live-completions--request (&rest _)
   "Request live completion."
