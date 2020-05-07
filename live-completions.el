@@ -42,29 +42,7 @@ The separator should contain at least one newline."
   :type 'string
   :group 'live-completions)
 
-(defcustom live-completions-columns 'multiple
-  "How many columns of candidates live-completions displays.
-To change the value from Lisp code use
-`live-completions-set-columns'."
-  :type '(choice
-          (const :tag "Single column" single)
-          (const :tag "Multiple columns" multiple))
-  :set (lambda (var columns)
-         (if (and (not (boundp var)) (eq columns 'multiple))
-             (set var 'multiple )
-           (live-completions-set-columns columns)))
-  :group 'live-completions)
-
-(defface live-completions-forceable-candidate
-  '((default :weight bold)
-    (((class color) (min-colors 88) (background dark)) :background "#10104f")
-    (((class color) (min-colors 88) (background light)) :background "#c4ffe0")
-    (t :foreground "blue"))
-  "Face for the candidate that force-completion would select."
-  :group 'live-completions)
-
-(defvar live-completions--livep nil
-  "Should we continously update the *Completions* buffer?")
+(defvar live-completions-columns)
 
 (defun live-completions-set-columns (columns &optional interactivep)
   "Set how many COLUMNS of candidates are displayed.
@@ -100,6 +78,50 @@ columns."
     (live-completions--update))
   (setq live-completions-columns columns))
 
+(defcustom live-completions-columns 'multiple
+  "How many columns of candidates live-completions displays.
+To change the value from Lisp code use
+`live-completions-set-columns'."
+  :type '(choice
+          (const :tag "Single column" single)
+          (const :tag "Multiple columns" multiple))
+  :set (lambda (var columns)
+         (if (and (not (boundp var)) (eq columns 'multiple))
+             (set var 'multiple )
+           (live-completions-set-columns columns)))
+  :group 'live-completions)
+
+(defface live-completions-forceable-candidate
+  '((default :weight bold)
+    (((class color) (min-colors 88) (background dark)) :background "#10104f")
+    (((class color) (min-colors 88) (background light)) :background "#c4ffe0")
+    (t :foreground "blue"))
+  "Face for the candidate that force-completion would select."
+  :group 'live-completions)
+
+(defcustom live-completions-sort-order 'display
+  "Sort order for completion candidates.
+The valid choices are:
+
+- `display': what the completions buffer traditionally uses.
+  This order uses the `display-sort-function' key of the
+  completion metadata and absent that, alphabetical order.
+
+- `cycle': the order `minibuffer-force-complete' (\"tab
+  cycling\") and icomplete use.  This order uses the
+  `cycle-sort-function' key of the completion metadata and absent
+  that it uses an order that puts the default first, recently
+  used items close to the top of the list, and shorter
+  candidates before longer ones.
+
+- nil: this disables all sorting, even if the metadata specifies
+  a `display-sort-function' or `cycle-sort-function'."
+  :type '(choice (const display) (const cycle) (const nil))
+  :group 'live-completions)
+
+(defvar live-completions--livep nil
+  "Should we continously update the *Completions* buffer?")
+
 (defun live-completions--request (&rest _)
   "Request live completion."
   (setq live-completions--livep 'please))
@@ -107,6 +129,42 @@ columns."
 (defun live-completions--confirm (&rest _)
   "Enable live completion if and only if a request was made."
   (setq live-completions--livep (eq live-completions--livep 'please)))
+
+(defun live-completions--unsorted-table (&optional table)
+  "Return completion table with no sorting."
+  (let* ((mcp minibuffer-completion-predicate)
+        (mbc (minibuffer-contents))
+        (mct minibuffer-completion-table)
+        (metadata (cdr (completion-metadata mbc mct mcp))))
+    (unless table (setq table mct))
+    (lambda (string pred action)
+      (if (eq action 'metadata)
+          (append
+           '(metadata
+             (display-sort-function . identity)
+             (  cycle-sort-function . identity))
+           metadata)
+        (complete-with-action action table string pred)))))
+
+(defun live-completions--cycle-order-table ()
+  "Return completion table for `cycle' sort order."
+  (let* ((all (completion-all-sorted-completions))
+         (mct minibuffer-completion-table)
+         (last (last all)))
+    (when last (setcdr last nil))
+    (when (or (eq mct 'help--symbol-completion-table)
+              (vectorp mct)
+              (and (consp mct) (symbolp (car mct))))
+      (setq all (mapcar #'intern all)))
+    (live-completions--unsorted-table all)))
+
+(defun live-completions--sorted-table ()
+  "Return completion table for current sort order."
+  (pcase live-completions-sort-order
+    ('display minibuffer-completion-table)
+    ('cycle (live-completions--cycle-order-table))
+    ('nil (live-completions--unsorted-table))
+    (_ (user-error "Unknown live-completions-sort-order"))))
 
 (defun live-completions--update ()
   "Update the *Completions* buffer.
@@ -117,8 +175,10 @@ Meant to be added to `post-command-hook'."
           (save-excursion
             (goto-char (point-max))
             (let ((minibuffer-message-timeout 0)
-                  (inhibit-message t))
-              (minibuffer-completion-help)))
+                  (inhibit-message t)
+                  (minibuffer-completion-table
+                   (live-completions--sorted-table)))
+                 (minibuffer-completion-help)))
         (quit (abort-recursive-edit))))))
 
 (defun live-completions--highlight-forceable (completions &optional _common)
