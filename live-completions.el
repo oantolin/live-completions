@@ -150,7 +150,7 @@ columns."
       (setq all (mapcar #'intern all)))
     (live-completions--unsorted-table all)))
 
-(defun live-completions--sorted-table ()
+(defun live-completions--sort-order-table ()
   "Return completion table for current sort order."
   (pcase live-completions-sort-order
     ('display minibuffer-completion-table)
@@ -169,7 +169,7 @@ Meant to be added to `post-command-hook'."
             (let ((minibuffer-message-timeout 0)
                   (inhibit-message t)
                   (minibuffer-completion-table
-                   (live-completions--sorted-table)))
+                   (live-completions--sort-order-table)))
                  (minibuffer-completion-help)))
         (quit (abort-recursive-edit))))))
 
