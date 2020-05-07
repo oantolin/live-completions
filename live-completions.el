@@ -42,53 +42,15 @@ The separator should contain at least one newline."
   :type 'string
   :group 'live-completions)
 
-(defvar live-completions-columns)
-
-(defun live-completions-set-columns (columns &optional interactivep)
-  "Set how many COLUMNS of candidates are displayed.
-
-Called from Lisp code COLUMNS should be one of the symbols
-`single', `multiple' or `toggle'.
-
-When called interactively without prefix argument, toggle between
-single and multiple columns.  Called with a numerical prefix of 1,
-set single column mode, any other prefix argument sets multiple
-columns."
-  (interactive
-   (list (pcase current-prefix-arg
-           ('nil 'toggle)
-           (1 'single)
-           (_ 'multiple))
-         t))
-  (pcase columns
-    ('single
-     (advice-add 'completion--insert-strings :around
-                 #'live-completions--single-column '((depth . 1))))
-    ('multiple
-     (advice-remove 'completion--insert-strings
-                    #'live-completions--single-column))
-    ('toggle
-     (live-completions-set-columns
-      (if (advice-member-p #'live-completions--single-column
-                           'completion--insert-strings)
-          'multiple
-        'single))))
-  (when (and interactivep
-             (bound-and-true-p live-completions-mode))
-    (live-completions--update))
-  (setq live-completions-columns columns))
-
 (defcustom live-completions-columns 'multiple
   "How many columns of candidates live-completions displays.
-To change the value from Lisp code use
-`live-completions-set-columns'."
+
+There is also a command `live-completions-set-columns' that you
+might want to bind to a key in `minibuffer-local-completion-map'
+to toggle between single and multiple column views."
   :type '(choice
           (const :tag "Single column" single)
           (const :tag "Multiple columns" multiple))
-  :set (lambda (var columns)
-         (if (and (not (boundp var)) (eq columns 'multiple))
-             (set var 'multiple )
-           (live-completions-set-columns columns)))
   :group 'live-completions)
 
 (defface live-completions-forceable-candidate
@@ -121,6 +83,36 @@ The valid choices are:
 
 (defvar live-completions--livep nil
   "Should we continously update the *Completions* buffer?")
+
+(defvar live-completions-columns)
+
+;;;###autoload
+(defun live-completions-set-columns (columns)
+  "Set how many COLUMNS of completion candidates are displayed.
+
+Called from Lisp code COLUMNS should be one of the symbols
+`single', `multiple' or `toggle'.
+
+When called interactively without prefix argument, toggle between
+single and multiple columns.  Called with a numerical prefix of 1,
+set single column mode, any other prefix argument sets multiple
+columns."
+  (interactive
+   (list (pcase current-prefix-arg
+           ('nil 'toggle)
+           (1 'single)
+           (_ 'multiple))))
+  (when (eq columns 'toggle)
+    (setq columns
+          (if (eq live-completions-columns 'single) 'multiple 'single)))
+  (when (eq columns 'single)
+    ;; enable standalone use, without live-completions-mode
+    (advice-add 'completion--insert-strings :around
+                #'live-completions--single-column '((depth . 1))))
+  (let ((changep (not (eq columns live-completions-columns))))
+    (setq live-completions-columns columns)
+    (when (and changep (bound-and-true-p live-completions-mode))
+      (live-completions--update))))
 
 (defun live-completions--request (&rest _)
   "Request live completion."
@@ -207,43 +199,48 @@ Meant to be added to `minibuffer-setup-hook'."
       (goto-char (point-min))
       (put-text-property (point) (1+ (line-end-position)) 'invisible t))))
 
-(defun live-completions--single-column (_oldfun strings)
+(defun live-completions--single-column (oldfun strings)
   "Insert completion candidate STRINGS in a single column."
-  (dolist (str strings)
-    (if (not (consp str))
-        (put-text-property (point) (progn (insert str) (point))
+  (if (eq live-completions-columns 'multiple)
+      (funcall oldfun strings)
+    (dolist (str strings)
+      (if (not (consp str))
+          (put-text-property (point) (progn (insert str) (point))
+                             'mouse-face 'highlight)
+        (put-text-property (point) (progn (insert (car str)) (point))
                            'mouse-face 'highlight)
-      (put-text-property (point) (progn (insert (car str)) (point))
-                         'mouse-face 'highlight)
-      (let ((beg (point))
-            (end (progn (insert (cadr str)) (point))))
-        (put-text-property beg end 'mouse-face nil)
-        (font-lock-prepend-text-property beg end 'face
-                                         'completions-annotations)))
-    (insert live-completions-horizontal-separator))
-  (delete-region (- (point) (length live-completions-horizontal-separator))
-                 (point))
-  (insert "\n"))
+        (let ((beg (point))
+              (end (progn (insert (cadr str)) (point))))
+          (put-text-property beg end 'mouse-face nil)
+          (font-lock-prepend-text-property beg end 'face
+                                           'completions-annotations)))
+      (insert live-completions-horizontal-separator))
+    (delete-region (- (point) (length live-completions-horizontal-separator))
+                   (point))
+    (insert "\n")))
 
 ;;;###autoload
 (define-minor-mode live-completions-mode
   "Live updating of the *Completions* buffer."
   :global t
   (let ((advice-list
-         '((live-completions--highlight-forceable display-completion-list)
-           (live-completions--hide-first-line completion--insert-strings)
-           (live-completions--request
+         '((live-completions--highlight-forceable :before
+            display-completion-list)
+           (live-completions--hide-first-line :before
+            completion--insert-strings)
+           (live-completions--single-column :around completion--insert-strings)
+           (live-completions--request :before
             completing-read read-buffer kill-buffer)
-           (live-completions--confirm
+           (live-completions--confirm :before
             read-string read-from-minibuffer))))
     (if live-completions-mode
         (progn
           (add-hook 'minibuffer-setup-hook #'live-completions--setup)
           (dolist (spec advice-list)
-            (dolist (fn (cdr spec)) (advice-add fn :before (car spec)))))
+            (dolist (fn (cddr spec)) (advice-add fn (cadr spec) (car spec)))))
       (remove-hook 'minibuffer-setup-hook #'live-completions--setup)
       (dolist (spec advice-list)
-        (dolist (fn (cdr spec)) (advice-remove fn (car spec))))
+        (dolist (fn (cddr spec)) (advice-remove fn (car spec))))
       (dolist (buffer (buffer-list))
         (when (minibufferp buffer)
           (remove-hook 'post-command-hook #'live-completions--update t))))))
