@@ -116,7 +116,8 @@ Meant to be added to `post-command-hook'."
       (condition-case nil
           (save-excursion
             (goto-char (point-max))
-            (let ((minibuffer-message-timeout 0))
+            (let ((minibuffer-message-timeout 0)
+                  (inhibit-message t))
               (minibuffer-completion-help)))
         (quit (abort-recursive-edit))))))
 
