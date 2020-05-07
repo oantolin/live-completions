@@ -123,8 +123,7 @@ The argument SORTP should be either t or nil."
       (advice-add 'completion-metadata-get :after-until
                   #'live-completions--lie-about-sorting)
     (advice-remove 'completion-metadata-get
-                   #'live-completions--lie-about-sorting))
-  (setq live-completions-sort-unsorted sortp))
+                   #'live-completions--lie-about-sorting)))
 
 (defun live-completions--request (&rest _)
   "Request live completion."
