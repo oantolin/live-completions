@@ -160,21 +160,17 @@ columns."
 
 (defun live-completions--update (&rest _)
   "Update the *Completions* buffer.
-Meant to be added to `post-command-hook' and as after"
-  (let ((mini (active-minibuffer-window)))
-    (when mini
-      (select-window mini t)
-      (let ((while-no-input-ignore-events '(selection-request)))
-        (while-no-input
-          (condition-case nil
-              (save-excursion
-                (goto-char (point-max))
-                (let ((minibuffer-message-timeout 0)
-                      (inhibit-message t)
-                      (minibuffer-completion-table
-                       (live-completions--sort-order-table)))
-                  (minibuffer-completion-help)))
-            (quit (abort-recursive-edit))))))))
+Meant to be added to `after-change-functions'."
+  (let ((while-no-input-ignore-events '(selection-request)))
+    (while-no-input
+      (condition-case nil
+          (save-excursion
+            (goto-char (point-max))
+            (let ((inhibit-message t)
+                  (minibuffer-completion-table
+                   (live-completions--sort-order-table)))
+              (minibuffer-completion-help)))
+        (quit (abort-recursive-edit))))))
 
 (defun live-completions--highlight-forceable (completions &optional _common)
   "Highlight the completion that `minibuffer-force-complete' would insert.
@@ -188,12 +184,21 @@ is were the COMPLETIONS argument comes from."
        'face 'live-completions-forceable-candidate
        first))))
 
+(defun live-completions--honor-inhibit-message (fn &rest args)
+  "Skip applying FN to ARGS if inhibit-message is t.
+Meant as `:around' advice for `minibuffer-message', which does
+not honor minibuffer message."
+  (unless inhibit-message
+    (apply fn args)))
+
 (defun live-completions--setup ()
   "Setup live updating for the *Completions* buffer.
 Meant to be added to `minibuffer-setup-hook'."
   (when live-completions--livep
+    (setq-local completion-show-inline-help nil)
+    (run-with-idle-timer 0.1 nil #'live-completions--update)
     (sit-for 0.01)
-    (add-hook 'post-command-hook #'live-completions--update nil t)))
+    (add-hook 'after-change-functions #'live-completions--update nil t)))
 
 (defun live-completions--hide-first-line (&rest _)
   "Make first line in *Completions* buffer invisible."
@@ -236,7 +241,8 @@ Meant to be added to `minibuffer-setup-hook'."
             completing-read read-buffer kill-buffer)
            (live-completions--confirm :before
             read-string read-from-minibuffer)
-           (live-completions--update :after choose-completion))))
+           (live-completions--honor-inhibit-message :around
+            minibuffer-message))))
     (if live-completions-mode
         (progn
           (add-hook 'minibuffer-setup-hook #'live-completions--setup)
@@ -247,7 +253,7 @@ Meant to be added to `minibuffer-setup-hook'."
         (dolist (fn (cddr spec)) (advice-remove fn (car spec))))
       (dolist (buffer (buffer-list))
         (when (minibufferp buffer)
-          (remove-hook 'post-command-hook #'live-completions--update t))))))
+          (remove-hook 'after-change-functions #'live-completions--update t))))))
 
 (defmacro live-completions-do (config &rest body)
   "Evaluate BODY with single column live completion.
