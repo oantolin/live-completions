@@ -158,20 +158,23 @@ columns."
     ('nil (live-completions--unsorted-table))
     (_ (user-error "Unknown live-completions-sort-order"))))
 
-(defun live-completions--update ()
+(defun live-completions--update (&rest _)
   "Update the *Completions* buffer.
-Meant to be added to `post-command-hook'."
-  (let ((while-no-input-ignore-events '(selection-request)))
-    (while-no-input
-      (condition-case nil
-          (save-excursion
-            (goto-char (point-max))
-            (let ((minibuffer-message-timeout 0)
-                  (inhibit-message t)
-                  (minibuffer-completion-table
-                   (live-completions--sort-order-table)))
-                 (minibuffer-completion-help)))
-        (quit (abort-recursive-edit))))))
+Meant to be added to `post-command-hook' and as after"
+  (let ((mini (active-minibuffer-window)))
+    (when mini
+      (select-window mini t)
+      (let ((while-no-input-ignore-events '(selection-request)))
+        (while-no-input
+          (condition-case nil
+              (save-excursion
+                (goto-char (point-max))
+                (let ((minibuffer-message-timeout 0)
+                      (inhibit-message t)
+                      (minibuffer-completion-table
+                       (live-completions--sort-order-table)))
+                  (minibuffer-completion-help)))
+            (quit (abort-recursive-edit))))))))
 
 (defun live-completions--highlight-forceable (completions &optional _common)
   "Highlight the completion that `minibuffer-force-complete' would insert.
@@ -232,7 +235,8 @@ Meant to be added to `minibuffer-setup-hook'."
            (live-completions--request :before
             completing-read read-buffer kill-buffer)
            (live-completions--confirm :before
-            read-string read-from-minibuffer))))
+            read-string read-from-minibuffer)
+           (live-completions--update :after choose-completion))))
     (if live-completions-mode
         (progn
           (add-hook 'minibuffer-setup-hook #'live-completions--setup)
