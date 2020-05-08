@@ -83,6 +83,14 @@ The valid choices are:
                  (const :tag "No sorting" nil))
   :group 'live-completions)
 
+(defcustom live-completions-skip-updates nil
+  "Live of commands to skip updating completions for.
+For example, you might want to add `minibuffer-force-complete' to
+this list, so that you can see the candidates you tab-cycle
+through."
+  :type 'hook
+  :group 'live-completions)
+
 (defvar live-completions--livep nil
   "Should we continously update the *Completions* buffer?")
 
@@ -161,20 +169,21 @@ columns."
 (defun live-completions--update (&rest _)
   "Update the *Completions* buffer.
 Meant to be added to `post-command-hook' and as after"
-  (let ((mini (active-minibuffer-window)))
-    (when mini
-      (select-window mini t)
-      (let ((while-no-input-ignore-events '(selection-request)))
-        (while-no-input
-          (condition-case nil
-              (save-excursion
-                (goto-char (point-max))
-                (let ((minibuffer-message-timeout 0)
-                      (inhibit-message t)
-                      (minibuffer-completion-table
-                       (live-completions--sort-order-table)))
-                  (minibuffer-completion-help)))
-            (quit (abort-recursive-edit))))))))
+  (unless (memq real-this-command live-completions-skip-updates)
+    (let ((mini (active-minibuffer-window)))
+      (when mini
+        (select-window mini t)
+        (let ((while-no-input-ignore-events '(selection-request)))
+          (while-no-input
+            (condition-case nil
+                (save-excursion
+                  (goto-char (point-max))
+                  (let ((minibuffer-message-timeout 0)
+                        (inhibit-message t)
+                        (minibuffer-completion-table
+                         (live-completions--sort-order-table)))
+                    (minibuffer-completion-help)))
+              (quit (abort-recursive-edit)))))))))
 
 (defun live-completions--highlight-forceable (completions &optional _common)
   "Highlight the completion that `minibuffer-force-complete' would insert.
