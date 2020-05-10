@@ -161,16 +161,17 @@ columns."
 (defun live-completions--update (&rest _)
   "Update the *Completions* buffer.
 Meant to be added to `after-change-functions'."
-  (let ((while-no-input-ignore-events '(selection-request)))
-    (while-no-input
-      (condition-case nil
-          (save-excursion
-            (goto-char (point-max))
-            (let ((inhibit-message t)
-                  (minibuffer-completion-table
-                   (live-completions--sort-order-table)))
-              (minibuffer-completion-help)))
-        (quit (abort-recursive-edit))))))
+  (when (minibufferp) ; skip if we've exited already
+    (let ((while-no-input-ignore-events '(selection-request)))
+      (while-no-input
+        (condition-case nil
+            (save-excursion
+              (goto-char (point-max))
+              (let ((inhibit-message t)
+                    (minibuffer-completion-table
+                     (live-completions--sort-order-table)))
+                (minibuffer-completion-help)))
+          (quit (abort-recursive-edit)))))))
 
 (defun live-completions--highlight-forceable (completions &optional _common)
   "Highlight the completion that `minibuffer-force-complete' would insert.
