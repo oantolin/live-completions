@@ -55,7 +55,7 @@ to toggle between single and multiple column views."
 
 (defface live-completions-forceable-candidate
   '((default :weight bold)
-    (((class color) (min-colors 88) (background dark)) :background "#10104f")
+    (((class color) (min-colors 88) (background dark)) :background "#010a5f")
     (((class color) (min-colors 88) (background light)) :background "#c4ffe0")
     (t :foreground "blue"))
   "Face for the candidate that force-completion would select."
