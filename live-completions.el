@@ -196,9 +196,8 @@ not honor minibuffer message."
 Meant to be added to `minibuffer-setup-hook'."
   (when live-completions--livep
     (setq-local completion-show-inline-help nil)
-    (run-with-idle-timer 0.1 nil #'live-completions--update)
-    (sit-for 0.01)
-    (add-hook 'after-change-functions #'live-completions--update nil t)))
+    (add-hook 'after-change-functions #'live-completions--update nil t)
+    (run-with-idle-timer 0.1 nil #'live-completions--update)))
 
 (defun live-completions--hide-first-line (&rest _)
   "Make first line in *Completions* buffer invisible."
