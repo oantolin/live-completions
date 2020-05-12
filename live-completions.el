@@ -238,7 +238,8 @@ Meant to be added to `minibuffer-setup-hook'."
             completion--insert-strings)
            (live-completions--single-column :around completion--insert-strings)
            (live-completions--request :before
-            completing-read read-buffer kill-buffer)
+            completing-read read-buffer kill-buffer read-variable
+            read-command read-function)
            (live-completions--confirm :before
             read-string read-from-minibuffer)
            (live-completions--honor-inhibit-message :around
