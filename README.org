@@ -90,6 +90,45 @@ cons:
   not, but it should be easy to spot this candidate because is is
   higlighted.
 
+* Setting a maximum height for the completions buffer
+
+  You can use the built-in =temp-buffer-resize-mode= to limit the height
+  of the completions buffer. Set the variable =temp-buffer-max-height=
+  to either an integer, the maximum height in lines, or to a function
+  that computes the maximum height.
+
+  To set a maximum height of 10 lines for all temporary buffers (not
+  just the completions buffer):
+
+  #+begin_src emacs-lisp
+    (setq temp-buffer-max-height 10)
+    (temp-buffer-resize-mode)
+  #+end_src
+
+  To set the maximum height only for the completions buffer and keep
+  the default (which is half the frame height) for all other temporary
+  buffers:
+
+  #+begin_src emacs-lisp
+    (defvar old-max-height-function temp-buffer-max-height)
+
+    (defun max-completions-height (buffer)
+      (if (string= (buffer-name buffer) "*Completions*")
+          10
+        (funcall old-max-height-function temp-buffer-max-height)))
+
+    (setq temp-buffer-max-height #'max-completions-height)
+    (temp-buffer-resize-mode)
+  #+end_src
+
+  #+RESULTS:
+  : t
+
+  If you use a function rather than a number, you can also make the
+  maximum height depend on current circumstances. For example you use
+  =(/ (frame-height) 3)= to make the maximum height a third of the
+  height of the frame.
+
 * Defining your own commands with live completion
 
 If you don't want to use =live-completions-mode= all the time but you
