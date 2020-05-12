@@ -14,6 +14,7 @@ dizzying.
 - [[#why-write-a-new-completion-ui][Why write a new completion UI?]]
 - [[#screenshot][Screenshot]]
 - [[#sort-orders-for-candidates][Sort orders for candidates]]
+- [[#setting-a-maximum-height-for-the-completions-buffer][Setting a maximum height for the completions buffer]]
 - [[#defining-your-own-commands-with-live-completion][Defining your own commands with live completion]]
 :END:
 
