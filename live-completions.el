@@ -83,9 +83,6 @@ The valid choices are:
                  (const :tag "No sorting" nil))
   :group 'live-completions)
 
-(defvar live-completions--livep nil
-  "Should we continously update the *Completions* buffer?")
-
 ;;;###autoload
 (defun live-completions-set-columns (columns)
   "Set how many COLUMNS of completion candidates are displayed.
@@ -113,14 +110,6 @@ columns."
     (setq live-completions-columns columns)
     (when (and changep (bound-and-true-p live-completions-mode))
       (live-completions--update))))
-
-(defun live-completions--request (&rest _)
-  "Request live completion."
-  (setq live-completions--livep 'please))
-
-(defun live-completions--confirm (&rest _)
-  "Enable live completion if and only if a request was made."
-  (setq live-completions--livep (eq live-completions--livep 'please)))
 
 (defun live-completions--unsorted-table (&optional table)
   "Return completion table with no sorting."
@@ -195,10 +184,10 @@ not honor minibuffer message."
 (defun live-completions--setup ()
   "Setup live updating for the *Completions* buffer.
 Meant to be added to `minibuffer-setup-hook'."
-  (when live-completions--livep
-    (setq-local completion-show-inline-help nil)
-    (add-hook 'after-change-functions #'live-completions--update nil t)
-    (run-with-idle-timer 0.1 nil #'live-completions--update)))
+  (remove-hook 'minibuffer-setup-hook #'live-completions--setup)
+  (setq-local completion-show-inline-help nil)
+  (add-hook 'after-change-functions #'live-completions--update nil t)
+  (run-with-idle-timer 0.1 nil #'live-completions--update))
 
 (defun live-completions--hide-first-line (&rest _)
   "Make first line in *Completions* buffer invisible."
@@ -227,34 +216,44 @@ Meant to be added to `minibuffer-setup-hook'."
                    (point))
     (insert "\n")))
 
+(defun live-completions-read
+    (prompt collection &optional predicate
+            require-match initial-input hist def inherit-input-method)
+  "Read with live updating of the completions buffer.
+To be used as a `completing-read-function'.  For the meanings of
+PROMPT, COLLECTION, PREDICATE, REQUIRE-MATCH, INITIAL-INPUT,
+HIST, DEF, and INHERIT-INPUT-METHOD, see `completing-read'."
+  (condition-case err
+      (progn
+        (add-hook 'minibuffer-setup-hook #'live-completions--setup)
+        (completing-read-default        ; not live-completions--old-crf!
+         prompt collection predicate
+         require-match initial-input hist def inherit-input-method))
+    (t (signal (car err) (cdr err)))))
+
+(defvar live-completions--old-crf nil
+  "Store previous value of `completing-read-function'")
+
 ;;;###autoload
 (define-minor-mode live-completions-mode
   "Live updating of the *Completions* buffer."
   :global t
   (let ((advice-list
-         '((live-completions--highlight-forceable :before
-            display-completion-list)
-           (live-completions--hide-first-line :before
-            completion--insert-strings)
-           (live-completions--single-column :around completion--insert-strings)
-           (live-completions--request :before
-            completing-read read-buffer kill-buffer read-variable
-            read-command read-function)
-           (live-completions--confirm :before
-            read-string read-from-minibuffer)
-           (live-completions--honor-inhibit-message :around
-            minibuffer-message))))
+         '((display-completion-list
+            :before live-completions--highlight-forceable)
+           (completion--insert-strings
+            :before live-completions--hide-first-line)
+           (completion--insert-strings
+            :around live-completions--single-column)
+           (minibuffer-message
+            :around live-completions--honor-inhibit-message))))
     (if live-completions-mode
         (progn
-          (add-hook 'minibuffer-setup-hook #'live-completions--setup)
-          (dolist (spec advice-list)
-            (dolist (fn (cddr spec)) (advice-add fn (cadr spec) (car spec)))))
-      (remove-hook 'minibuffer-setup-hook #'live-completions--setup)
-      (dolist (spec advice-list)
-        (dolist (fn (cddr spec)) (advice-remove fn (car spec))))
-      (dolist (buffer (buffer-list))
-        (when (minibufferp buffer)
-          (remove-hook 'after-change-functions #'live-completions--update t))))))
+          (setq live-completions--old-crf completing-read-function
+                completing-read-function #'live-completions-read)
+          (dolist (spec advice-list) (apply #'advice-add spec)))
+      (setq completing-read-function live-completions--old-crf)
+      (dolist (spec advice-list) (advice-remove (car spec) (caddr spec))))))
 
 (defmacro live-completions-do (config &rest body)
   "Evaluate BODY with single column live completion.
