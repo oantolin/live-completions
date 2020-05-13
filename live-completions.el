@@ -252,7 +252,9 @@ HIST, DEF, and INHERIT-INPUT-METHOD, see `completing-read'."
           (setq live-completions--old-crf completing-read-function
                 completing-read-function #'live-completions-read)
           (dolist (spec advice-list) (apply #'advice-add spec)))
-      (setq completing-read-function live-completions--old-crf)
+      (when live-completions--old-crf
+        (setq completing-read-function live-completions--old-crf
+              live-completions--old-crf nil))
       (dolist (spec advice-list) (advice-remove (car spec) (caddr spec))))))
 
 (defmacro live-completions-do (config &rest body)
