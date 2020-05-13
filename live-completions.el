@@ -286,8 +286,9 @@ variable for the possible values associated to this key."
         (buffer (make-symbol "buffer"))
         (cfg (lambda (key var)
                (let ((val (plist-get config key)))
-                 (when val `((,var ,val)))))))
-    (when (plist-get config :height)
+                 (when val `((,var ,val))))))
+        (height (plist-get config :height)))
+    (when height
       (setf config
             (plist-put config :height-fn ; affect only *Completions*
                        `(lambda (,buffer)
@@ -301,16 +302,14 @@ variable for the possible values associated to this key."
     `(let ((,livep live-completions-mode)
            (,icompletep (bound-and-true-p icomplete-mode))
            (,resizep temp-buffer-resize-mode)
-           ,@(let ((height (plist-get config :height)))
-               (when height
-                 `((,max-height ,height) ; evaluate height only once
-                   (,old-max-height temp-buffer-max-height)))))
+           ,@(when height
+               `((,max-height ,height)  ; evaluate height only once
+                 (,old-max-height temp-buffer-max-height))))
        (unwind-protect
            (progn
              (when ,icompletep (icomplete-mode -1))
              (unless ,livep (live-completions-mode))
-             ,@(when (plist-get config :height)
-                 `((unless ,resizep (temp-buffer-resize-mode))))
+             ,@(when height `((unless ,resizep (temp-buffer-resize-mode))))
              (let (,@(funcall cfg :columns 'live-completions-columns)
                    ,@(funcall cfg :separator
                               'live-completions-horizontal-separator)
@@ -318,8 +317,7 @@ variable for the possible values associated to this key."
                    ,@(funcall cfg :height-fn 'temp-buffer-max-height))
                ,@body))
          (unless ,livep (live-completions-mode -1))
-         ,@(when (plist-get config :height)
-             `((unless ,resizep (temp-buffer-resize-mode -1))))
+         ,@(when height `((unless ,resizep (temp-buffer-resize-mode -1))))
          (when ,icompletep (icomplete-mode))))))
 
 (provide 'live-completions)
