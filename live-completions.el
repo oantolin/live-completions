@@ -281,30 +281,29 @@ variable for the possible values associated to this key."
   (let ((livep (make-symbol "livep"))
         (icompletep (make-symbol "icompletep"))
         (resizep (make-symbol "resizep"))
-        (max-height (make-symbol "max-height"))
-        (old-max-height (make-symbol "old-max-height"))
-        (buffer (make-symbol "buffer"))
+        (completions-height (make-symbol "completions-height"))
+        (other-temp-height (make-symbol "other-temp-height"))
         (cfg (lambda (key var)
                (let ((val (plist-get config key)))
                  (when val `((,var ,val))))))
         (height (plist-get config :height)))
     (when height
       (setf config
-            (plist-put config :height-fn ; affect only *Completions*
-                       `(lambda (,buffer)
-                          (if (string= (buffer-name ,buffer) "*Completions*")
-                              (if (functionp ,max-height)
-                                  (funcall ,max-height ,buffer)
-                                ,max-height)
-                            (if (functionp ,old-max-height)
-                                (funcall ,old-max-height ,buffer)
-                              ,old-max-height))))))
+            (plist-put
+             config :height-fn ; affect only *Completions*
+             (let ((buf (make-symbol "buf"))
+                   (ht (make-symbol "ht")))
+               `(lambda (,buf)
+                  (let ((,ht (if (string= (buffer-name ,buf) "*Completions*")
+                                 ,completions-height
+                               ,other-temp-height)))
+                    (if (functionp ,ht) (funcall ,ht ,buf) ,ht)))))))
     `(let ((,livep live-completions-mode)
            (,icompletep (bound-and-true-p icomplete-mode))
            (,resizep temp-buffer-resize-mode)
            ,@(when height
-               `((,max-height ,height)  ; evaluate height only once
-                 (,old-max-height temp-buffer-max-height))))
+               `((,completions-height ,height) ; evaluate height only once
+                 (,other-temp-height temp-buffer-max-height))))
        (unwind-protect
            (progn
              (when ,icompletep (icomplete-mode -1))
