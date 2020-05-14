@@ -189,12 +189,13 @@ Meant to be added to `minibuffer-setup-hook'."
   (add-hook 'after-change-functions #'live-completions--update nil t)
   (run-with-idle-timer 0.1 nil #'live-completions--update))
 
-(defun live-completions--hide-first-line (&rest _)
-  "Make first line in *Completions* buffer invisible."
-  (when (string= (buffer-name) "*Completions*")
-    (save-excursion
-      (goto-char (point-min))
-      (put-text-property (point) (1+ (line-end-position)) 'invisible t))))
+(defun live-completions--hide-help ()
+  "Make help message in *Completions* buffer invisible.
+Meant to be add to `completion-setup-hook'."
+  (with-current-buffer standard-output
+    (goto-char (point-min))
+    (next-completion 1)
+    (put-text-property (point-min) (point) 'invisible t)))
 
 (defun live-completions--single-column (oldfun strings)
   "Insert completion candidate STRINGS in a single column."
@@ -242,8 +243,6 @@ HIST, DEF, and INHERIT-INPUT-METHOD, see `completing-read'."
          '((display-completion-list
             :before live-completions--highlight-forceable)
            (completion--insert-strings
-            :before live-completions--hide-first-line)
-           (completion--insert-strings
             :around live-completions--single-column)
            (minibuffer-message
             :around live-completions--honor-inhibit-message)
@@ -253,10 +252,12 @@ HIST, DEF, and INHERIT-INPUT-METHOD, see `completing-read'."
         (progn
           (setq live-completions--old-crf completing-read-function
                 completing-read-function #'live-completions-read)
+          (add-hook 'completion-setup-hook #'live-completions--hide-help 1)
           (dolist (spec advice-list) (apply #'advice-add spec)))
       (when live-completions--old-crf
         (setq completing-read-function live-completions--old-crf
               live-completions--old-crf nil))
+      (remove-hook 'completion-setup-hook #'live-completions--hide-help)
       (dolist (spec advice-list) (advice-remove (car spec) (caddr spec))))))
 
 (defmacro live-completions-do (config &rest body)
