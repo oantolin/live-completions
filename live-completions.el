@@ -246,7 +246,9 @@ HIST, DEF, and INHERIT-INPUT-METHOD, see `completing-read'."
            (completion--insert-strings
             :around live-completions--single-column)
            (minibuffer-message
-            :around live-completions--honor-inhibit-message))))
+            :around live-completions--honor-inhibit-message)
+           (completion--flush-all-sorted-completions
+            :after live-completions--update))))
     (if live-completions-mode
         (progn
           (setq live-completions--old-crf completing-read-function
