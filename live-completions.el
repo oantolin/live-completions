@@ -189,13 +189,18 @@ Meant to be added to `minibuffer-setup-hook'."
   (add-hook 'after-change-functions #'live-completions--update nil t)
   (run-with-idle-timer 0.1 nil #'live-completions--update))
 
+(defun live-completions--first-completion ()
+  "When at the start of the completions buffer go to first completion."
+  (when (bobp) (next-completion 1)))
+
 (defun live-completions--hide-help ()
   "Make help message in *Completions* buffer invisible.
 Meant to be add to `completion-setup-hook'."
   (with-current-buffer standard-output
     (goto-char (point-min))
     (next-completion 1)
-    (put-text-property (point-min) (point) 'invisible t)))
+    (put-text-property (point-min) (point) 'invisible t)
+    (add-hook 'pre-command-hook #'live-completions--first-completion 5 t)))
 
 (defun live-completions--single-column (oldfun strings)
   "Insert completion candidate STRINGS in a single column."
