@@ -168,6 +168,9 @@ Meant to be used as advice for `display-completion-list', which
 is were the COMPLETIONS argument comes from."
   (let ((first (car (member (car (completion-all-sorted-completions))
                             completions))))
+    (unless (or first (null completions))
+      (setq first (car completions))
+      (push first completion-all-sorted-completions))
     (when first
       (font-lock-prepend-text-property
        0 (length first)
