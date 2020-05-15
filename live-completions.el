@@ -170,6 +170,7 @@ is were the COMPLETIONS argument comes from."
                             completions))))
     (unless (or first (null completions))
       (setq first (car completions))
+      (if (consp first) (setq first (car first))) ; has annotation
       (push first completion-all-sorted-completions))
     (when first
       (font-lock-prepend-text-property
