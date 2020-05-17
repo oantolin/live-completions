@@ -191,7 +191,7 @@ Meant to be added to `minibuffer-setup-hook'."
   (remove-hook 'minibuffer-setup-hook #'live-completions--setup)
   (setq-local completion-show-inline-help nil)
   (add-hook 'after-change-functions #'live-completions--update nil t)
-  (run-with-idle-timer 0.1 nil #'live-completions--update))
+  (run-with-idle-timer 0.01 nil #'live-completions--update))
 
 (defun live-completions--first-completion ()
   "When at the start of the completions buffer go to first completion."
