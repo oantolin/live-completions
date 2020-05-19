@@ -159,24 +159,30 @@ Meant to be added to `after-change-functions'."
               (let ((inhibit-message t)
                     (minibuffer-completion-table
                      (live-completions--sort-order-table)))
-                (minibuffer-completion-help)))
+                (minibuffer-completion-help)
+                (redisplay)
+                (live-completions--highlight-forceable)))
           (quit (abort-recursive-edit)))))))
 
-(defun live-completions--highlight-forceable (completions &optional _common)
-  "Highlight the completion that `minibuffer-force-complete' would insert.
-Meant to be used as advice for `display-completion-list', which
-is were the COMPLETIONS argument comes from."
-  (let ((first (car (member (car (completion-all-sorted-completions))
-                            completions))))
-    (unless (or first (null completions))
-      (setq first (car completions))
-      (if (consp first) (setq first (car first))) ; has annotation
-      (push first completion-all-sorted-completions))
-    (when first
-      (font-lock-prepend-text-property
-       0 (length first)
-       'face 'live-completions-forceable-candidate
-       first))))
+(defun live-completions--highlight-forceable ()
+  "Highlight the completion that `minibuffer-force-complete' would insert."
+  (when-let ((first (car (completion-all-sorted-completions))))
+    (with-current-buffer "*Completions*"
+      (goto-char (point-min))
+      (let (donep)
+        (while (not donep)
+          (next-completion 1)
+          (if (eobp)
+              (setq donep t)
+            (let* ((beg (point))
+                   (end (or (next-single-property-change beg 'mouse-face)
+                            (point-max))))
+              (when (string= (buffer-substring beg end) first)
+                (let ((inhibit-read-only t))
+                  (font-lock-prepend-text-property
+                   beg end
+                   'face 'live-completions-forceable-candidate))
+                (setq donep t)))))))))
 
 (defun live-completions--honor-inhibit-message (fn &rest args)
   "Skip applying FN to ARGS if inhibit-message is t.
@@ -249,9 +255,7 @@ HIST, DEF, and INHERIT-INPUT-METHOD, see `completing-read'."
   "Live updating of the *Completions* buffer."
   :global t
   (let ((advice-list
-         '((display-completion-list
-            :before live-completions--highlight-forceable)
-           (completion--insert-strings
+         '((completion--insert-strings
             :around live-completions--single-column)
            (minibuffer-message
             :around live-completions--honor-inhibit-message)
