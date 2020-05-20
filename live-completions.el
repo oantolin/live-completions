@@ -32,6 +32,8 @@
 
 ;;; Code:
 
+(eval-when-compile (require 'subr-x))
+
 (defgroup live-completions nil
   "Live updating of the *Completions* buffer."
   :group 'completion)
@@ -111,13 +113,12 @@ columns."
     (when (and changep (bound-and-true-p live-completions-mode))
       (live-completions--update))))
 
-(defun live-completions--unsorted-table (&optional table)
+(defun live-completions--unsorted-table ()
   "Return completion table with no sorting."
-  (let* ((mcp minibuffer-completion-predicate)
-        (mbc (minibuffer-contents))
-        (mct minibuffer-completion-table)
-        (metadata (cdr (completion-metadata mbc mct mcp))))
-    (unless table (setq table mct))
+  (let* ((mbc (minibuffer-contents))
+         (mct minibuffer-completion-table)
+         (mcp minibuffer-completion-predicate)
+         (metadata (cdr (completion-metadata mbc mct mcp))))
     (lambda (string pred action)
       (if (eq action 'metadata)
           (append
@@ -125,19 +126,36 @@ columns."
              (display-sort-function . identity)
              (  cycle-sort-function . identity))
            metadata)
-        (complete-with-action action table string pred)))))
+        (complete-with-action action mct string pred)))))
 
 (defun live-completions--cycle-order-table ()
   "Return completion table for `cycle' sort order."
-  (let* ((all (completion-all-sorted-completions))
+  (let* ((mbc (minibuffer-contents))
          (mct minibuffer-completion-table)
-         (last (last all)))
-    (when last (setcdr last nil))
-    (when (or (eq mct 'help--symbol-completion-table)
-              (vectorp mct)
-              (and (consp mct) (symbolp (car mct))))
-      (setq all (mapcar #'intern all)))
-    (live-completions--unsorted-table all)))
+         (mcp minibuffer-completion-predicate)
+         (metadata (cdr (completion-metadata mbc mct mcp)))
+         (first-pass
+          (or
+           (completion-metadata-get metadata 'cycle-sort-function)
+           (lambda (all)
+             (sort all (lambda (c1 c2) (< (length c1) (length c2)))))))
+         (sorter
+          (let ((hist (if (version< emacs-version "27")
+                          (symbol-value minibuffer-history-variable)
+                        (minibuffer-history-value))))
+            (lambda (all)
+              (setq all (funcall first-pass all))
+              (sort all (lambda (c1 c2)
+                          (> (length (member c1 hist))
+                             (length (member c2 hist)))))))))
+    (lambda (string pred action)
+      (if (eq action 'metadata)
+          (append
+           `(metadata
+             (display-sort-function . ,sorter)
+             (  cycle-sort-function . ,sorter))
+           metadata)
+        (complete-with-action action mct string pred)))))
 
 (defun live-completions--sort-order-table ()
   "Return completion table for current sort order."
