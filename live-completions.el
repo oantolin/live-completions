@@ -172,14 +172,15 @@ Meant to be added to `after-change-functions'."
     (let ((while-no-input-ignore-events '(selection-request)))
       (while-no-input
         (condition-case nil
-            (save-excursion
-              (goto-char (point-max))
-              (let ((inhibit-message t)
-                    (minibuffer-completion-table
-                     (live-completions--sort-order-table)))
-                (minibuffer-completion-help)
-                (redisplay)
-                (live-completions--highlight-forceable)))
+            (save-match-data
+              (save-excursion
+                (goto-char (point-max))
+                (let ((inhibit-message t)
+                      (minibuffer-completion-table
+                       (live-completions--sort-order-table)))
+                  (minibuffer-completion-help)
+                  (redisplay)
+                  (live-completions--highlight-forceable))))
           (quit (abort-recursive-edit)))))))
 
 (defun live-completions--highlight-forceable ()
