@@ -184,23 +184,26 @@ Meant to be added to `after-change-functions'."
 
 (defun live-completions--highlight-forceable ()
   "Highlight the completion that `minibuffer-force-complete' would insert."
-  (when-let ((first (car (completion-all-sorted-completions))))
+  (ignore-errors ;; this can fail harmlessly if the user types fast
     (with-current-buffer "*Completions*"
       (goto-char (point-min))
-      (let (donep)
-        (while (not donep)
-          (next-completion 1)
-          (if (eobp)
-              (setq donep t)
-            (let* ((beg (point))
-                   (end (or (next-single-property-change beg 'mouse-face)
-                            (point-max))))
-              (when (string= (buffer-substring beg end) first)
-                (let ((inhibit-read-only t))
-                  (font-lock-prepend-text-property
-                   beg end
-                   'face 'live-completions-forceable-candidate))
-                (setq donep t)))))))))
+      (let* (beg end
+                 (advance
+                  (lambda ()
+                    (next-completion 1)
+                    (setq beg (point)
+                          end (next-single-property-change beg 'mouse-face))
+                    (unless end (setq end (point-max))))))  
+        (funcall advance)
+        (when (eq live-completions-sort-order 'display)
+          (let ((forced (with-current-buffer completion-reference-buffer
+                          (car (completion-all-sorted-completions)))))
+            (while (not (or (eobp) (string= (buffer-substring beg end) forced)))
+              (funcall advance))))
+        (let ((inhibit-read-only t))
+          (font-lock-prepend-text-property
+           beg end
+           'face 'live-completions-forceable-candidate))))))
 
 (defun live-completions--honor-inhibit-message (fn &rest args)
   "Skip applying FN to ARGS if inhibit-message is t.
