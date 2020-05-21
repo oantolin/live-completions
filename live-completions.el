@@ -193,7 +193,7 @@ Meant to be added to `after-change-functions'."
                     (next-completion 1)
                     (setq beg (point)
                           end (next-single-property-change beg 'mouse-face))
-                    (unless end (setq end (point-max))))))  
+                    (unless end (setq end (point-max))))))
         (funcall advance)
         (when (eq live-completions-sort-order 'display)
           (let ((forced (with-current-buffer completion-reference-buffer
