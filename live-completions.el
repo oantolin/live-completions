@@ -179,8 +179,7 @@ Meant to be added to `after-change-functions'."
                       (minibuffer-completion-table
                        (live-completions--sort-order-table)))
                   (minibuffer-completion-help)
-                  (redisplay)
-                  (live-completions--highlight-forceable))))
+                  (run-at-time 0 nil #'live-completions--highlight-forceable))))
           (quit (abort-recursive-edit)))))))
 
 (defun live-completions--highlight-forceable ()
