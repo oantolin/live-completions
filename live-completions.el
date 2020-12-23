@@ -176,6 +176,9 @@ Meant to be added to `after-change-functions'."
               (save-excursion
                 (goto-char (point-max))
                 (let ((inhibit-message t)
+                      ;; don't ring the bell in `minibuffer-completion-help' 
+                      ;; when <= 1 completion exists.
+                      (ring-bell-function #'ignore)
                       (minibuffer-completion-table
                        (live-completions--sort-order-table)))
                   (minibuffer-completion-help)
