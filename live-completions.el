@@ -236,10 +236,10 @@ Meant to be add to `completion-setup-hook'."
     (put-text-property (point-min) (point) 'invisible t)
     (add-hook 'pre-command-hook #'live-completions--first-completion 5 t)))
 
-(defun live-completions--single-column (oldfun strings)
+(defun live-completions--single-column (oldfun strings &rest args)
   "Insert completion candidate STRINGS in a single column."
   (if (eq live-completions-columns 'multiple)
-      (funcall oldfun strings)
+      (apply oldfun strings args)
     (dolist (str strings)
       (if (not (consp str))
           (put-text-property (point) (progn (insert str) (point))
